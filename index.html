@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<title>Park Quest — Outrun the Dragon</title>
+<title>Park Quest — Adib &amp; Nabihah</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
 <style>
@@ -86,7 +86,7 @@
     <div>
       <div class="plate" id="quest">
         <div class="head">QUEST</div>
-        <div class="obj" id="obj">Cross the park and find the wooden box.</div>
+        <div class="obj" id="obj">Reach the garden at the heart of the park.</div>
       </div>
       <div class="plate" id="hearts">&#10084;&#10084;&#10084;</div>
     </div>
@@ -96,7 +96,7 @@
     </div>
   </div>
 
-  <div id="tip">Drag anywhere to walk &middot; puddles block the way</div>
+  <div id="tip">Drag anywhere to walk &middot; head for the centre</div>
   <div id="stick"><div id="knob"></div></div>
   <button id="smash" class="px">SMASH!</button>
   <div id="toast" class="px">+100 XP</div>
@@ -149,15 +149,15 @@
 const INVITE = {
   names   : "Adib<br>&amp;<br>Nabihah",
   shortNames: "Adib &amp; Nabihah",
-  when    : "Saturday, June 20, 2026<br>4:00 PM",
-  where   : "Sunset Garden Pavilion<br>123 Rose Lane, Springfield",
+  when    : "Saturday, 21 November 2026<br>7:00 PM &ndash; 11:00 PM",
+  where   : "Crazy Rich Asians Banquet Hall<br>Ecohill, Semenyih",
   dress   : "Garden formal — comfy shoes encouraged",
-  rsvpBy  : "June 1, 2026",
-  rsvpUrl : "mailto:aiden.sophie@example.com?subject=RSVP",
+  rsvpBy  : "7 November 2026",
+  rsvpUrl : "mailto:adib.nabihah@example.com?subject=RSVP",
   rsvpText: "SEND MY RSVP",
   finaleMsg: "You outran a dragon for us. The least we can do is feed you cake."
 };
-const DRAGON_SPEED = 0.4;    // fraction of your speed — lower is easier
+const DRAGON_SPEED = 0.34;    // fraction of your speed — lower is easier
 const LIVES = 3;
 
 /* ==========================================================
@@ -168,31 +168,31 @@ const LIVES = 3;
 const MAP = [
 "#################################",
 "#################################",
-"##...f...........==.......f....##",
-"##.####..........==......####..##",
-"##.####..........==......####..##",
-"##......,........==..~~........##",
-"##============================###",
-"##.....n.........==...~~.......##",
-"##..........HHH..~~..HHH.......##",
-"##...............==............##",
-"##..####.........==......####..##",
-"##..####...~~....==......####..##",
-"##...............==...~~.......##",
-"##============================###",
-"##....~~.........==......n.....##",
-"##...............==............##",
-"##...............==...HHHHH....##",
-"##...............==...H...B.H..##",
-"##...............==...H~~~~....##",
-"##...............==............##",
-"##============================###",
-"##..####.........==.~~...####..##",
-"##..####.........==......####..##",
-"##.....n.........==............##",
-"##...~~..........==....f.......##",
-"##...............==............##",
-"##....f..........==.......f....##",
+"##.............==..............##",
+"##..##...,..f..==...f..,...##..##",
+"##..##..n......==.......n..##..##",
+"##.............==..............##",
+"##=============================##",
+"##.........,~..==...~,.........##",
+"##.....f.......==........f.....##",
+"##.##.....HHHHH==HHHHHH.....##.##",
+"##......~~Hf..f==.f..fH~~......##",
+"##....f...H.HH.==..HH.H...f....##",
+"##.,......H.HH.~~~.HH.H......,.##",
+"##...#.......~.==..~.......#...##",
+"##.........f.~.=B..~.f.........##",
+"##........H..~.==..~..H........##",
+"##...~~f..H.HH.~~~.HH.H..f~~...##",
+"##........H.HH.==..HH.H........##",
+"##.##.....Hf..f==.f..fH.....##.##",
+"##........HHHHH==HHHHHH........##",
+"##....n.f....~.==..~....f.n....##",
+"##.............==..............##",
+"##=============================##",
+"##.........~...==....~.........##",
+"##..##..n......==.......n..##..##",
+"##.......,..f..==...f..,.......##",
+"#################################",
 "#################################"
 ];
 
@@ -219,6 +219,7 @@ const START={x:16*TILE, y:25*TILE+12};
 const player={x:START.x,y:START.y,dir:'up',moving:false,anim:0,splash:0,inv:0};
 const dragon={x:START.x,y:START.y+140,active:false,anim:0,puff:0,alive:true};
 let hearts=LIVES, state='play', opened=false, smashPhase=0, shakeT=0, splashCool=0, walked=0;
+const GARDEN={x0:10,y0:9,x1:22,y1:19}; let inGarden=false;
 
 function tileAt(px,py){
   const tx=Math.floor(px/TILE), ty=Math.floor(py/TILE);
@@ -317,8 +318,8 @@ function reset(){
   player.x=START.x; player.y=START.y; player.inv=60; player.dir='up';
   dragon.x=START.x; dragon.y=START.y+150; dragon.active=false;
   hearts=LIVES; drawHearts();
-  opened=false; smashPhase=0; BOX.alive=true; parts=[]; walked=0; shakeT=0;
-  state='play'; say('Cross the park and find the wooden box.');
+  opened=false; smashPhase=0; BOX.alive=true; parts=[]; walked=0; shakeT=0; inGarden=false;
+  state='play'; say('Reach the garden at the heart of the park.');
   compass.style.opacity=1;
 }
 
@@ -333,7 +334,7 @@ function loseHeart(){
   dragon.x=START.x; dragon.y=START.y+150; dragon.active=false;
   setTimeout(()=>{ if(state==='play'){dragon.active=true; audio.roar();} },1400);
   showToast('SINGED! '+hearts+' &#10084; LEFT');
-  say('Singed! Back to the park gate.','Cross the park and find the wooden box.');
+  say('Singed! Back to the park gate.','Reach the garden at the heart of the park.');
 }
 
 function openInvite(){
@@ -460,6 +461,14 @@ function frame(t){
       const ny=player.y+iy*SPD, hy=hits(player.x,ny);
       if(!hy) player.y=ny; else if(hy==='~') bump(player.x,ny);
     }
+    /* arriving at the centre garden */
+    const ptx=Math.floor(player.x/TILE), pty=Math.floor(player.y/TILE);
+    const inside = ptx>GARDEN.x0&&ptx<GARDEN.x1&&pty>GARDEN.y0&&pty<GARDEN.y1;
+    if(inside&&!inGarden){ inGarden=true; audio.blip(660,.16,'triangle',.06);
+      showToast('&#127800; THE ROSE GARDEN');
+      say('The box sits in the middle. Mind the fountains.'); }
+    if(!inside) inGarden=false;
+
     /* dragon wakes up once you've walked a bit */
     if(!dragon.active && walked>70 && hearts>0){
       dragon.active=true; audio.roar(); shakeT=10;
@@ -555,7 +564,7 @@ function bump(px,py){
   splashCool=380; player.splash=6;
   spawn(px,py,7,[C.water2,'#CFEBF7',C.water],1.1,22,true);
   audio.splash();
-  say('Splash! Puddles block you — go around.', dragon.active?'Outrun the dragon and reach the box.':'Cross the park and find the wooden box.');
+  say('Splash! Puddles block you — go around.', dragon.active?'Outrun the dragon and reach the box.':'Reach the garden at the heart of the park.');
 }
 
 /* ---------------- finale scene: bride & groom ---------------- */
