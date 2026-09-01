@@ -88,6 +88,9 @@
   .charbtn .prev{width:72px;height:90px;image-rendering:pixelated;
     background:linear-gradient(#9FD3EE,#6FA463 72%);border:2px solid #2B2130;}
   .charbtn .cname{font-size:10px;color:#E3B23C;letter-spacing:1px;margin-top:8px;}
+  #preview{touch-action:auto;}
+  #pv-img{display:block;width:100%;border:3px solid #4A3A55;margin-top:12px;
+    -webkit-touch-callout:default;-webkit-user-select:auto;user-select:auto;pointer-events:auto;}
   #gameover .panel{border-color:#E76F51;}
   #gameover h1{font-size:15px;}
 </style>
@@ -153,6 +156,17 @@
     </div>
     <button class="bigbtn" id="accept-btn">ACCEPT INVITATION</button>
     <div class="foot">the dragon is waiting outside</div>
+  </div>
+</div>
+
+<!-- saved-image preview (iOS fallback) -->
+<div class="overlay" id="preview">
+  <div class="panel" style="max-width:340px">
+    <div class="banner">&#128247; SAVE TO PHOTOS</div>
+    <img id="pv-img" alt="Wedding invitation">
+    <p class="foot" style="font-size:17px;color:#F5E9DA;margin:10px 0 0">
+      Press and hold the picture, then choose<br><b>Add to Photos</b> / <b>Save Image</b>.</p>
+    <button class="bigbtn ghost" id="pv-close">DONE</button>
   </div>
 </div>
 
@@ -483,7 +497,7 @@ function openInvite(){
   document.getElementById('c-dress').innerHTML=INVITE.dress;
   document.getElementById('c-rsvpby').innerHTML=INVITE.rsvpBy;
   document.getElementById('invite').classList.add('open');
-  state='invite'; confettiBurst(60);
+  state='invite'; confettiBurst(60); prepareCard();
 }
 function showFinale(){
   document.getElementById('f-names').innerHTML=INVITE.shortNames;
@@ -821,20 +835,51 @@ function buildCard(){
   g.fillText('You outran a dragon for us \u2014 now come celebrate.', W/2, H-72);
   return cv;
 }
-async function saveCard(btn){
-  const old=btn.innerHTML;
-  btn.innerHTML='&#8230;';
+const isIOS=()=>/iP(hone|od|ad)/.test(navigator.userAgent)||
+  (/Mac/.test(navigator.userAgent)&&navigator.maxTouchPoints>1);
+let cardBlob=null, cardURL=null;
+function cardName(){ return plain(INVITE.shortNames).join(' ').replace(/[^\w]+/g,'-')+'-Invitation.png'; }
+
+/* rendered ahead of time, so the tap itself can share instantly (iOS needs that) */
+async function prepareCard(){
   try{ if(document.fonts&&document.fonts.ready) await document.fonts.ready; }catch(e){}
   const cv=buildCard();
-  const file=plain(INVITE.shortNames).join(' ').replace(/[^\w]+/g,'-')+'-Invitation.png';
-  cv.toBlob(b=>{
-    if(!b){ window.open(cv.toDataURL('image/png'),'_blank'); btn.innerHTML=old; return; }
-    const url=URL.createObjectURL(b), a=document.createElement('a');
-    a.href=url; a.download=file; document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(()=>URL.revokeObjectURL(url),4000);
-    btn.innerHTML='&#10003;';
-    setTimeout(()=>{btn.innerHTML=old;},1800);
-  },'image/png');
+  await new Promise(res=>cv.toBlob(b=>{
+    if(b){ cardBlob=b; if(cardURL) URL.revokeObjectURL(cardURL); cardURL=URL.createObjectURL(b); }
+    else { cardURL=cv.toDataURL('image/png'); }
+    res();
+  },'image/png'));
+}
+function showPreview(){
+  document.getElementById('pv-img').src = cardURL || buildCard().toDataURL('image/png');
+  document.getElementById('preview').classList.add('open');
+}
+document.getElementById('pv-close').addEventListener('click',()=>
+  document.getElementById('preview').classList.remove('open'));
+
+function saveCard(btn){
+  const ok=()=>{ btn.innerHTML='&#10003;'; setTimeout(()=>{btn.innerHTML='&#11015; SAVE';},1800); };
+  if(!cardBlob && !cardURL){ showPreview(); return; }
+
+  /* 1. iOS / Android share sheet -> "Save Image" puts it straight in the gallery */
+  if(cardBlob && window.File && navigator.canShare){
+    let f=null;
+    try{ f=new File([cardBlob],cardName(),{type:'image/png'}); }catch(e){}
+    if(f && navigator.canShare({files:[f]})){
+      navigator.share({files:[f], title:plain(INVITE.shortNames).join(' ')})
+        .then(ok)
+        .catch(err=>{ if(!err||err.name!=='AbortError') showPreview(); });
+      return;
+    }
+  }
+  /* 2. desktop / Android: real file download */
+  const a=document.createElement('a');
+  if(!isIOS() && 'download' in a && cardURL){
+    a.href=cardURL; a.download=cardName();
+    document.body.appendChild(a); a.click(); a.remove(); ok(); return;
+  }
+  /* 3. last resort: show it so it can be long-pressed */
+  showPreview();
 }
 document.getElementById('save-btn').addEventListener('click',e=>{
   audio.blip(880,.1,'square',.06); saveCard(e.currentTarget);
