@@ -73,6 +73,14 @@
   .foot{text-align:center;color:#a89bb4;font-size:15px;margin-top:12px;}
   #scene{display:block;width:100%;height:150px;image-rendering:pixelated;
     background:linear-gradient(#8FC7E8,#DCEFC7 78%);border:3px solid #4A3A55;margin-bottom:6px;}
+  .chars{display:flex;gap:12px;margin:18px 0 4px;}
+  .charbtn{flex:1;background:#3A2E43;border:3px solid #4A3A55;border-bottom:5px solid #241b2b;
+    color:#F5E9DA;padding:10px 6px 12px;cursor:pointer;display:flex;flex-direction:column;
+    align-items:center;gap:4px;font-family:'VT323',monospace;}
+  .charbtn:active{transform:translateY(3px);border-bottom-width:2px;}
+  .charbtn .prev{width:72px;height:90px;image-rendering:pixelated;
+    background:linear-gradient(#9FD3EE,#6FA463 72%);border:2px solid #2B2130;}
+  .charbtn .cname{font-size:10px;color:#E3B23C;letter-spacing:1px;margin-top:8px;}
   #gameover .panel{border-color:#E76F51;}
   #gameover h1{font-size:15px;}
 </style>
@@ -103,6 +111,24 @@
 </div>
 
 <div id="confetti"></div>
+
+<!-- character select -->
+<div class="overlay open" id="select">
+  <div class="panel">
+    <div class="banner">&#9670; CHOOSE YOUR CHARACTER &#9670;</div>
+    <div class="chars">
+      <button class="charbtn" data-who="adib">
+        <canvas class="prev" width="72" height="90"></canvas>
+        <span class="cname px">ADIB</span>
+      </button>
+      <button class="charbtn" data-who="nabihah">
+        <canvas class="prev" width="72" height="90"></canvas>
+        <span class="cname px">NABIHAH</span>
+      </button>
+    </div>
+    <div class="foot">tap a character to enter the park</div>
+  </div>
+</div>
 
 <!-- invitation -->
 <div class="overlay" id="invite">
@@ -166,34 +192,46 @@ const LIVES = 3;
       (every row must stay the same length)
    ========================================================== */
 const MAP = [
-"#################################",
-"#################################",
-"##.............==..............##",
-"##..##...,..f..==...f..,...##..##",
-"##..##..n......==.......n..##..##",
-"##.............==..............##",
-"##=============================##",
-"##.........,~..==...~,.........##",
-"##.....f.......==........f.....##",
-"##.##.....HHHHH==HHHHHH.....##.##",
-"##......~~Hf..f==.f..fH~~......##",
-"##....f...H.HH.==..HH.H...f....##",
-"##.,......H.HH.~~~.HH.H......,.##",
-"##...#.......~.==..~.......#...##",
-"##.........f.~.=B..~.f.........##",
-"##........H..~.==..~..H........##",
-"##...~~f..H.HH.~~~.HH.H..f~~...##",
-"##........H.HH.==..HH.H........##",
-"##.##.....Hf..f==.f..fH.....##.##",
-"##........HHHHH==HHHHHH........##",
-"##....n.f....~.==..~....f.n....##",
-"##.............==..............##",
-"##=============================##",
-"##.........~...==....~.........##",
-"##..##..n......==.......n..##..##",
-"##.......,..f..==...f..,.......##",
-"#################################",
-"#################################"
+"#############################################",
+"#############################################",
+"##...................==....................##",
+"##..##f.....##,.##...==....f##,.##...,.##..##",
+"##..##.,...~##.f##...==.....##..##....f##..##",
+"##..........~........==........~~..........##",
+"##...................==....................##",
+"##=========================================##",
+"##......==...........==............==......##",
+"##......==...........==............==......##",
+"##..##~~==..##.......==........##..==.~##..##",
+"##..##~.==.f##.......==.......f##..==..##..##",
+"##.f....==...........==............==..~.f.##",
+"##......==.....HHHHHH==HHHHHHH.....==......##",
+"##......==..H..Hf...f==.f...fH..H..==......##",
+"##......==..H..H.....==......H..H..==......##",
+"##...HH.HHH.H..H.HH..==...HH.H..H.HHH.HH...##",
+"##......==..H..H.HH..==...HH.H..H..==......##",
+"##..n...==..H..H.....~~~.....H..H..==...n..##",
+"##......==..H....f.~.==..~.f....H..==......##",
+"##========......f..~.=B..~..f......========##",
+"##......==.n.....f.~.==..~.f.....n.==......##",
+"##..~~..==.....H.....~~~.....H.....==...~~.##",
+"##..~...==.....H.HH..==...HH.H.....==...~..##",
+"##......==..~~.H.HH..==...HH.H.~~..==......##",
+"##......==.....H.....==......H.....==......##",
+"##.##...==.....Hf...f==.f...fH.....==...##.##",
+"##.##...==.##..HHHHHH==HHHHHHH..##.==...##.##",
+"##......==.##........==.........##.==......##",
+"##......==...........==............==......##",
+"##..##..==.~.##....f.==..f....##.~.==..##..##",
+"##..##.f==..~##......==.......##~..==f.##..##",
+"##......==...........==............==......##",
+"##=========================================##",
+"##........n.........,==...........n........##",
+"##.,.........H.~.....==......~.H.........,.##",
+"##...##.....fH...##n.==,.n##...H...........##",
+"##...##......H...##..==...##...H...........##",
+"#############################################",
+"#############################################"
 ];
 
 /* ========================================================== */
@@ -211,15 +249,15 @@ function resize(){
 }
 window.addEventListener('resize',resize);
 
-let boxTile={x:26,y:17};
+let boxTile={x:22,y:20};
 for(let y=0;y<ROWS;y++)for(let x=0;x<COLS;x++) if(MAP[y][x]==='B') boxTile={x,y};
 const BOX={x:boxTile.x*TILE+8,y:boxTile.y*TILE+8,alive:true};
-const START={x:16*TILE, y:25*TILE+12};
+const START={x:22*TILE, y:36*TILE+8};
 
 const player={x:START.x,y:START.y,dir:'up',moving:false,anim:0,splash:0,inv:0};
 const dragon={x:START.x,y:START.y+140,active:false,anim:0,puff:0,alive:true};
 let hearts=LIVES, state='play', opened=false, smashPhase=0, shakeT=0, splashCool=0, walked=0;
-const GARDEN={x0:10,y0:9,x1:22,y1:19}; let inGarden=false;
+const GARDEN={x0:15,y0:13,x1:29,y1:27}; let inGarden=false;
 
 function tileAt(px,py){
   const tx=Math.floor(px/TILE), ty=Math.floor(py/TILE);
@@ -276,8 +314,60 @@ const audio={ctx:null,muted:false,
   fanfare(){[523,659,784,1046].forEach((f,i)=>setTimeout(()=>this.blip(f,.22,'square',.07),i*130));},
   wedding(){[523,587,659,784,880,1046].forEach((f,i)=>setTimeout(()=>this.blip(f,.3,'triangle',.06),i*160));}
 };
+/* ---------------- background music (pure WebAudio chiptune) ---------------- */
+const music={
+  gain:null, mode:null, step:0, nextT:0, timer:null,
+  /* 16-step patterns: [bass, lead, hat]  0 = rest */
+  P:{
+    calm:{dur:.155, bassWave:'triangle', leadWave:'triangle',
+      bass:[110,0,0,110, 87.31,0,0,0, 98,0,0,98, 82.41,0,0,0],
+      lead:[220,0,261.63,0, 329.63,0,261.63,0, 196,0,246.94,0, 293.66,0,246.94,0],
+      hat: [0,0,1,0, 0,0,1,0, 0,0,1,0, 0,0,1,0], vol:.05},
+    chase:{dur:.098, bassWave:'sawtooth', leadWave:'square',
+      bass:[73.42,73.42,0,73.42, 73.42,0,73.42,0, 87.31,87.31,0,87.31, 98,0,92.5,0],
+      lead:[293.66,0,349.23,293.66, 0,277.18,0,293.66, 349.23,0,392,349.23, 0,311.13,293.66,0],
+      hat: [1,0,1,0, 1,0,1,1, 1,0,1,0, 1,1,1,0], vol:.055},
+    love:{dur:.26, bassWave:'triangle', leadWave:'triangle',
+      bass:[130.81,0,0,0, 98,0,0,0, 110,0,0,0, 116.54,0,0,0],
+      lead:[523.25,392,659.25,392, 493.88,392,587.33,392, 523.25,440,659.25,440, 587.33,466.16,523.25,0],
+      hat: [0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0], vol:.045}
+  },
+  init(){
+    if(!audio.ctx) return false;
+    if(!this.gain){ this.gain=audio.ctx.createGain();
+      this.gain.gain.value=audio.muted?0:1; this.gain.connect(audio.ctx.destination); }
+    return true;
+  },
+  voice(f,t,d,type,v){
+    const o=audio.ctx.createOscillator(), g=audio.ctx.createGain();
+    o.type=type; o.frequency.setValueAtTime(f,t);
+    g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(v,t+.012);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+d);
+    o.connect(g); g.connect(this.gain); o.start(t); o.stop(t+d+.02);
+  },
+  tick(){
+    if(!this.mode||!audio.ctx) return;
+    const p=this.P[this.mode];
+    while(this.nextT < audio.ctx.currentTime+0.25){
+      const i=this.step%16, t=this.nextT;
+      if(p.bass[i]) this.voice(p.bass[i],t,p.dur*1.7,p.bassWave,p.vol);
+      if(p.lead[i]) this.voice(p.lead[i],t,p.dur*.9,p.leadWave,p.vol*.62);
+      if(p.hat[i])  this.voice(2600+Math.random()*400,t,.022,'square',p.vol*.30);
+      this.step++; this.nextT+=p.dur;
+    }
+  },
+  play(mode){
+    if(!this.init()) return;
+    if(this.mode===mode && this.timer) return;
+    this.mode=mode; this.step=0; this.nextT=audio.ctx.currentTime+.05;
+    if(!this.timer) this.timer=setInterval(()=>this.tick(),40);
+  },
+  stop(){ clearInterval(this.timer); this.timer=null; this.mode=null; },
+  setMuted(m){ if(this.gain) this.gain.gain.value = m?0:1; }
+};
 document.getElementById('mute').addEventListener('click',e=>{
-  audio.muted=!audio.muted; e.currentTarget.innerHTML=audio.muted?'&#128263;':'&#128266;';});
+  audio.muted=!audio.muted; music.setMuted(audio.muted);
+  e.currentTarget.innerHTML=audio.muted?'&#128263;':'&#128266;';});
 
 /* ---------------- particles ---------------- */
 let parts=[];
@@ -301,7 +391,7 @@ function say(t,revert){ objEl.textContent=t; if(revert) setTimeout(()=>{if(state
 /* ---------------- flow ---------------- */
 smashBtn.addEventListener('click',()=>{
   if(opened)return; opened=true; smashPhase=1; state='smashing';
-  smashBtn.classList.remove('show'); audio.crack(); shakeT=18;
+  smashBtn.classList.remove('show'); audio.crack(); shakeT=18; music.play('love');
   dragon.active=false; dangerEl.style.opacity=0;
   say('You crack the lid open...');
 });
@@ -309,30 +399,68 @@ document.getElementById('accept-btn').addEventListener('click',()=>{
   document.getElementById('invite').classList.remove('open');
   showFinale();
 });
-document.getElementById('play-again').addEventListener('click',reset);
-document.getElementById('retry').addEventListener('click',reset);
+document.getElementById('play-again').addEventListener('click',showSelect);
+document.getElementById('retry').addEventListener('click',showSelect);
+
+/* ---------------- character select ---------------- */
+const prevs=[...document.querySelectorAll('.charbtn')].map(b=>({
+  who:b.dataset.who, g:b.querySelector('canvas').getContext('2d')}));
+let selRunning=true, selT=0;
+function selFrame(){
+  if(!selRunning) return;
+  selT+=16;
+  for(const p of prevs){
+    const g=p.g; g.setTransform(1,0,0,1,0,0); g.clearRect(0,0,72,90);
+    g.setTransform(3,0,0,3,0,0); g.imageSmoothingEnabled=false;
+    g.fillStyle='#6FA463'; g.fillRect(0,20,24,10);
+    g.fillStyle='#639659'; g.fillRect(0,20,24,1);
+    hero(g,12,28,'down',Math.floor(selT/160)%4,p.who);
+    g.setTransform(1,0,0,1,0,0);
+  }
+  requestAnimationFrame(selFrame);
+}
+function showSelect(){
+  document.querySelectorAll('.overlay').forEach(o=>o.classList.remove('open'));
+  sceneRunning=false; state='select';
+  document.getElementById('select').classList.add('open');
+  selRunning=true; requestAnimationFrame(selFrame);
+  music.play('calm');
+}
+document.querySelectorAll('.charbtn').forEach(b=>b.addEventListener('click',()=>{
+  CHAR=b.dataset.who; selRunning=false;
+  document.getElementById('select').classList.remove('open');
+  audio.unlock(); audio.blip(660,.14,'square',.07);
+  document.querySelector('#quest .head').textContent='QUEST — '+CHARS[CHAR].name;
+  reset(); music.play('calm'); showToast('PLAYING AS '+CHARS[CHAR].name);
+}));
 
 function reset(){
   document.querySelectorAll('.overlay').forEach(o=>o.classList.remove('open'));
   sceneRunning=false;
   player.x=START.x; player.y=START.y; player.inv=60; player.dir='up';
-  dragon.x=START.x; dragon.y=START.y+150; dragon.active=false;
+  dragon.x=START.x; dragon.y=START.y+60; dragon.active=false;
   hearts=LIVES; drawHearts();
   opened=false; smashPhase=0; BOX.alive=true; parts=[]; walked=0; shakeT=0; inGarden=false;
   state='play'; say('Reach the garden at the heart of the park.');
   compass.style.opacity=1;
 }
 
+function placeDragonBehind(){
+  let dx=player.x-BOX.x, dy=player.y-BOX.y;
+  const d=Math.hypot(dx,dy)||1;
+  dragon.x=Math.max(24,Math.min(WORLD_W-24, player.x+dx/d*150));
+  dragon.y=Math.max(24,Math.min(WORLD_H-24, player.y+dy/d*150));
+}
 function loseHeart(){
   hearts--; drawHearts(); audio.hurt();
   shakeT=14; player.inv=110;
   spawn(player.x,player.y-8,14,['#FF8A3D','#FFD166','#E76F51'],1.6,26,false);
   dangerEl.style.opacity=0;
-  if(hearts<=0){ state='gameover'; dragon.active=false;
+  if(hearts<=0){ state='gameover'; dragon.active=false; music.stop();
     setTimeout(()=>document.getElementById('gameover').classList.add('open'),450); return; }
-  player.x=START.x; player.y=START.y;
-  dragon.x=START.x; dragon.y=START.y+150; dragon.active=false;
-  setTimeout(()=>{ if(state==='play'){dragon.active=true; audio.roar();} },1400);
+  player.x=START.x; player.y=START.y; dragon.active=false;
+  music.play('calm');
+  setTimeout(()=>{ if(state==='play'){ placeDragonBehind(); dragon.active=true; audio.roar(); music.play('chase'); } },1600);
   showToast('SINGED! '+hearts+' &#10084; LEFT');
   say('Singed! Back to the park gate.','Reach the garden at the heart of the park.');
 }
@@ -405,19 +533,61 @@ function drawBox(x,y,t){
   if(!opened){const b=Math.sin(t/300)*3; ctx.fillStyle=C.gold;
     ctx.fillRect(bx+7,y-14+b,2,6); ctx.fillRect(bx+7,y-6+b,2,2);}
 }
+const CHARS={
+  adib:{name:'ADIB', label:'Black suit', kind:'suit',
+        hair:'#241A12', suit:'#26232F', suitDark:'#17151F',
+        shirt:'#F5E9DA', tie:'#E76F51', skin:'#E8B98C'},
+  nabihah:{name:'NABIHAH', label:'White dress', kind:'dress',
+        hair:'#3B2416', dress:'#FFFFFF', dress2:'#EFE8DE', sash:'#E3B23C',
+        veil:'#FFFFFF', skin:'#F3C9A4'}
+};
+let CHAR='adib';
+
+/* one sprite routine, used by the game and by the select screen */
+function hero(g,x,y,dir,walk,who){
+  const c=CHARS[who];
+  const bob=(walk===1||walk===3)?-1:0, sw=walk===1?1:(walk===3?-1:0);
+  const legA=walk===1?2:(walk===3?-2:0);
+  const R=(a,b,w,h,col)=>{g.fillStyle=col; g.fillRect(a,b,w,h);};
+  R(x-6,y+1,12,2,'rgba(0,0,0,.20)');
+  if(c.kind==='dress'){
+    R(x-7+sw,y-4+bob,14,4,c.dress2);                 // skirt hem
+    R(x-6+sw,y-8+bob,12,4,c.dress);                  // skirt
+    R(x-4,y-12+bob,8,4,c.dress);                     // waist
+    R(x-4,y-8+bob,8,1,c.sash);
+    R(x-5,y-17+bob,10,5,c.dress);                    // bodice
+    R(x-6,y-16+bob,2,5,c.skin); R(x+4,y-16+bob,2,5,c.skin);   // arms
+    R(x-4,y-25+bob,8,8,c.skin);                      // head
+    R(x-5,y-27+bob,10,4,c.hair);                     // hair
+    if(dir!=='right') R(x-7,y-26+bob,2,13,c.veil);   // veil
+    if(dir!=='left')  R(x+5,y-26+bob,2,13,c.veil);
+    if(dir==='down'){R(x-2,y-21+bob,1,2,'#2A2028');R(x+1,y-21+bob,1,2,'#2A2028');
+      R(x+4,y-13+bob,5,4,'#4A7856'); R(x+5,y-15+bob,2,2,'#E76F51'); R(x+7,y-14+bob,2,2,'#F5E9DA');}
+    if(dir==='up')   R(x-5,y-26+bob,10,7,c.hair);
+    if(dir==='left'){R(x-5,y-25+bob,3,8,c.hair); R(x-3,y-21+bob,1,2,'#2A2028');}
+    if(dir==='right'){R(x+2,y-25+bob,3,8,c.hair); R(x+2,y-21+bob,1,2,'#2A2028');}
+  } else {
+    R(x-4,y-5+Math.max(0,legA),3,6,c.suitDark);      // trousers
+    R(x+1,y-5+Math.max(0,-legA),3,6,c.suitDark);
+    R(x-4,y,3,1,'#1A1720'); R(x+1,y,3,1,'#1A1720');  // shoes
+    R(x-5,y-14+bob,10,9,c.suit);                     // jacket
+    R(x-1,y-14+bob,3,7,c.shirt);                     // shirt
+    R(x-1,y-13+bob,3,2,c.tie);                       // bow tie
+    R(x-6,y-13+bob,2,6,c.suit); R(x+4,y-13+bob,2,6,c.suit);
+    R(x-6,y-8+bob,2,2,c.skin);  R(x+4,y-8+bob,2,2,c.skin);
+    R(x-4,y-23+bob,8,9,c.skin);                      // head
+    R(x-5,y-25+bob,10,4,c.hair);                     // hair
+    if(dir==='down'){R(x-2,y-19+bob,1,2,'#2A2028');R(x+1,y-19+bob,1,2,'#2A2028');}
+    if(dir==='up')   R(x-5,y-24+bob,10,7,c.hair);
+    if(dir==='left'){R(x-5,y-23+bob,3,8,c.hair); R(x-3,y-19+bob,1,2,'#2A2028');}
+    if(dir==='right'){R(x+2,y-23+bob,3,8,c.hair); R(x+2,y-19+bob,1,2,'#2A2028');}
+  }
+}
+
 function drawPlayer(x,y,t){
   if(player.inv>0 && Math.floor(t/70)%2===0) return;
   const walk=player.moving?Math.floor(player.anim/8)%4:0;
-  const bob=(walk===1||walk===3)?-1:0, legA=walk===1?2:(walk===3?-2:0);
-  r(x-5,y+1,10,2,'rgba(0,0,0,.2)');
-  r(x-4,y-4+Math.max(0,legA),3,5,C.pants); r(x+1,y-4+Math.max(0,-legA),3,5,C.pants);
-  r(x-5,y-11+bob,10,8,C.shirt); r(x-6,y-10+bob,2,5,C.shirt); r(x+4,y-10+bob,2,5,C.shirt);
-  r(x-6,y-6+bob,2,2,C.skin); r(x+4,y-6+bob,2,2,C.skin);
-  r(x-4,y-19+bob,8,8,C.skin); r(x-5,y-21+bob,10,4,C.hair);
-  if(player.dir==='down'){r(x-2,y-16+bob,1,2,'#3B2416');r(x+1,y-16+bob,1,2,'#3B2416');}
-  if(player.dir==='up'){r(x-5,y-20+bob,10,6,C.hair);}
-  if(player.dir==='left'){r(x-5,y-19+bob,3,7,C.hair);r(x-3,y-16+bob,1,2,'#3B2416');}
-  if(player.dir==='right'){r(x+2,y-19+bob,3,7,C.hair);r(x+2,y-16+bob,1,2,'#3B2416');}
+  hero(ctx,x,y,player.dir,walk,CHAR);
   if(player.splash>0)for(let i=0;i<3;i++) r(x-6+i*5,y+2-((player.splash/6)|0),2,2,C.water2);
 }
 function drawDragon(x,y,t){
@@ -470,8 +640,8 @@ function frame(t){
     if(!inside) inGarden=false;
 
     /* dragon wakes up once you've walked a bit */
-    if(!dragon.active && walked>70 && hearts>0){
-      dragon.active=true; audio.roar(); shakeT=10;
+    if(!dragon.active && walked>120 && hearts>0){
+      placeDragonBehind(); dragon.active=true; audio.roar(); shakeT=10; music.play('chase');
       showToast('&#128009; A DRAGON! RUN!');
       say('Outrun the dragon and reach the box.');
     }
@@ -629,6 +799,8 @@ function sceneFrame(){
 }
 
 drawHearts();
+state='select';
+requestAnimationFrame(selFrame);
 resize();
 requestAnimationFrame(frame);
 </script>
