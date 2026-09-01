@@ -69,6 +69,13 @@
     text-align:center;font-family:'Press Start 2P';font-size:11px;padding:16px 8px;border:none;
     border-bottom:5px solid #8f3a25;letter-spacing:1px;cursor:pointer;}
   .bigbtn:active{transform:translateY(3px);border-bottom-width:2px;}
+  .rsvp-row{align-items:center;}
+  .rsvp-row > div:nth-child(2){flex:1;}
+  #save-btn{flex-shrink:0;background:transparent;border:2px solid #E3B23C;border-radius:8px;
+    color:#E3B23C;font-family:'Press Start 2P',monospace;font-size:9px;letter-spacing:1px;
+    padding:9px 10px;line-height:1;cursor:pointer;min-width:74px;text-align:center;
+    box-shadow:0 3px 0 rgba(0,0,0,.35);}
+  #save-btn:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(0,0,0,.35);}
   .bigbtn.ghost{background:#3A2E43;border-bottom-color:#241b2b;color:#F5E9DA;}
   .foot{text-align:center;color:#a89bb4;font-size:15px;margin-top:12px;}
   #scene{display:block;width:100%;height:150px;image-rendering:pixelated;
@@ -133,13 +140,17 @@
 <!-- invitation -->
 <div class="overlay" id="invite">
   <div class="panel">
-    <div class="banner">&#10047; QUEST COMPLETE &#10047;</div>
+    <div class="banner">THE ADVENTURE BEGINS</div>
     <h1 id="c-names"></h1>
     <div class="rule">&#9670; &#9670; &#9670;</div>
     <div class="row"><div class="ic">&#128197;</div><div><span class="lb">DATE &amp; TIME</span><span class="vl" id="c-when"></span></div></div>
     <div class="row"><div class="ic">&#127981;</div><div><span class="lb">VENUE</span><span class="vl" id="c-where"></span></div></div>
     <div class="row"><div class="ic">&#127917;</div><div><span class="lb">DRESS CODE</span><span class="vl" id="c-dress"></span></div></div>
-    <div class="row"><div class="ic">&#9203;</div><div><span class="lb">RSVP BY</span><span class="vl" id="c-rsvpby"></span></div></div>
+    <div class="row rsvp-row">
+      <div class="ic">&#9203;</div>
+      <div><span class="lb">RSVP BY</span><span class="vl" id="c-rsvpby"></span></div>
+      <button id="save-btn" title="Save invitation as PNG" aria-label="Save invitation as PNG">&#11015; SAVE</button>
+    </div>
     <button class="bigbtn" id="accept-btn">ACCEPT INVITATION</button>
     <div class="foot">the dragon is waiting outside</div>
   </div>
@@ -177,7 +188,7 @@ const INVITE = {
   shortNames: "Adib &amp; Nabihah",
   when    : "Saturday, 21 November 2026<br>7:00 PM &ndash; 11:00 PM",
   where   : "Crazy Rich Asians Banquet Hall<br>Ecohill, Semenyih",
-  dress   : "Garden formal — comfy shoes encouraged",
+  dress   : "Dress up, feel comfortable, and celebrate with us.",
   rsvpBy  : "7 November 2026",
   rsvpUrl : "mailto:adib.nabihah@example.com?subject=RSVP",
   rsvpText: "SEND MY RSVP",
@@ -736,6 +747,98 @@ function bump(px,py){
   audio.splash();
   say('Splash! Puddles block you — go around.', dragon.active?'Outrun the dragon and reach the box.':'Reach the garden at the heart of the park.');
 }
+
+/* ---------------- save the invitation as a PNG ---------------- */
+function plain(html){
+  return html.replace(/<br\s*\/?>/gi,'\n').replace(/<[^>]+>/g,'')
+    .replace(/&amp;/g,'&').replace(/&ndash;/g,'\u2013').replace(/&mdash;/g,'\u2014')
+    .replace(/&nbsp;/g,' ').split('\n').map(l=>l.trim()).filter(Boolean);
+}
+function buildCard(){
+  const W=900,H=1600, cv=document.createElement('canvas');
+  cv.width=W; cv.height=H;
+  const g=cv.getContext('2d');
+  const px=n=>`${n}px "Press Start 2P", monospace`;
+  const vt=n=>`${n}px "VT323", monospace`;
+  const C1='#2B2130', GOLD='#E3B23C', CREAM='#F5E9DA', MUTED='#A89BB4';
+
+  g.fillStyle=C1; g.fillRect(0,0,W,H);
+  g.fillStyle=GOLD; g.fillRect(24,24,W-48,H-48);
+  g.fillStyle=C1;   g.fillRect(38,38,W-76,H-76);
+  g.fillStyle='#4A3A55'; g.fillRect(54,54,W-108,H-108);
+  g.fillStyle=C1;   g.fillRect(58,58,W-116,H-116);
+
+  g.textAlign='center';
+  g.fillStyle=GOLD; g.font=px(24);
+  g.fillText('THE ADVENTURE BEGINS', W/2, 148);
+
+  const names=plain(INVITE.names);
+  g.fillStyle=CREAM; g.font=px(52);
+  let y=270;
+  names.forEach(l=>{ g.fillText(l, W/2, y); y+=82; });
+
+  g.fillStyle=GOLD; g.font=px(20);
+  g.fillText('\u25C6   \u25C6   \u25C6', W/2, y+6);
+  y+=90;
+
+  const rows=[['DATE & TIME',INVITE.when],['VENUE',INVITE.where],
+              ['DRESS CODE',INVITE.dress],['RSVP BY',INVITE.rsvpBy]];
+  g.textAlign='left';
+  const L=132;
+  rows.forEach(([label,val])=>{
+    g.fillStyle=GOLD; g.fillRect(L-32,y-16,12,12);
+    g.font=px(17); g.fillStyle=GOLD; g.fillText(label, L, y);
+    y+=44;
+    g.font=vt(40); g.fillStyle=CREAM;
+    plain(val).forEach(line=>{
+      // soft wrap long lines
+      const words=line.split(' '); let cur='';
+      words.forEach(w=>{
+        const test=cur?cur+' '+w:w;
+        if(g.measureText(test).width > W-2*L+40 && cur){ g.fillText(cur,L,y); y+=42; cur=w; }
+        else cur=test;
+      });
+      if(cur){ g.fillText(cur,L,y); y+=42; }
+    });
+    y+=34;
+  });
+
+  /* little pixel scene at the foot of the card */
+  const gy=H-190;
+  g.fillStyle='#6FA463'; g.fillRect(58,gy,W-116,92);
+  g.fillStyle='#639659'; g.fillRect(58,gy,W-116,6);
+  g.fillStyle='#B98B5E'; g.fillRect(300,gy-118,14,120); g.fillRect(586,gy-118,14,120);
+  g.fillRect(300,gy-132,300,16);
+  for(let i=0;i<15;i++){ g.fillStyle='#4A7856'; g.fillRect(300+i*20,gy-148,16,16);
+    g.fillStyle=i%2?'#F5E9DA':'#E76F51'; g.fillRect(306+i*20,gy-152,7,7); }
+  const S=4.2;
+  g.save(); g.translate(410,gy+4); g.scale(S,S); hero(g,0,0,'down',0,'adib'); g.restore();
+  g.save(); g.translate(492,gy+4); g.scale(S,S); hero(g,0,0,'down',0,'nabihah'); g.restore();
+  for(let i=0;i<10;i++){ g.fillStyle=['#E76F51','#F5E9DA','#E3B23C'][i%3];
+    g.fillRect(90+((i*137)%720), gy+40+((i*29)%44), 9,6); }
+
+  g.textAlign='center'; g.fillStyle=MUTED; g.font=vt(30);
+  g.fillText('You outran a dragon for us \u2014 now come celebrate.', W/2, H-72);
+  return cv;
+}
+async function saveCard(btn){
+  const old=btn.innerHTML;
+  btn.innerHTML='&#8230;';
+  try{ if(document.fonts&&document.fonts.ready) await document.fonts.ready; }catch(e){}
+  const cv=buildCard();
+  const file=plain(INVITE.shortNames).join(' ').replace(/[^\w]+/g,'-')+'-Invitation.png';
+  cv.toBlob(b=>{
+    if(!b){ window.open(cv.toDataURL('image/png'),'_blank'); btn.innerHTML=old; return; }
+    const url=URL.createObjectURL(b), a=document.createElement('a');
+    a.href=url; a.download=file; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),4000);
+    btn.innerHTML='&#10003;';
+    setTimeout(()=>{btn.innerHTML=old;},1800);
+  },'image/png');
+}
+document.getElementById('save-btn').addEventListener('click',e=>{
+  audio.blip(880,.1,'square',.06); saveCard(e.currentTarget);
+});
 
 /* ---------------- finale scene: bride & groom ---------------- */
 const sc=document.getElementById('scene'), sctx=sc.getContext('2d');
