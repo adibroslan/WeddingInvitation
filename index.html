@@ -88,6 +88,20 @@
   .charbtn .prev{width:72px;height:90px;image-rendering:pixelated;
     background:linear-gradient(#9FD3EE,#6FA463 72%);border:2px solid #2B2130;}
   .charbtn .cname{font-size:10px;color:#E3B23C;letter-spacing:1px;margin-top:8px;}
+  #rsvp{touch-action:auto;}
+  .flabel{display:block;font-family:'Press Start 2P',monospace;font-size:8px;color:#E3B23C;
+    letter-spacing:1px;margin:16px 0 8px;}
+  #rsvp-name{width:100%;background:#1E1824;border:3px solid #4A3A55;color:#F5E9DA;
+    font-family:'VT323',monospace;font-size:23px;padding:11px 12px;outline:none;
+    -webkit-user-select:auto;user-select:auto;touch-action:auto;}
+  #rsvp-name:focus{border-color:#E3B23C;}
+  #rsvp-name::placeholder{color:#7d7189;}
+  .paxrow{display:flex;gap:8px;}
+  .pax{flex:1;background:transparent;border:3px solid #4A3A55;color:#F5E9DA;
+    font-family:'Press Start 2P',monospace;font-size:12px;padding:14px 0;cursor:pointer;}
+  .pax.on{background:#E3B23C;border-color:#E3B23C;color:#3a2a05;}
+  .pax:active{transform:translateY(2px);}
+  #rsvp-msg{min-height:22px;color:#E76F51;}
   #preview{touch-action:auto;}
   #pv-img{display:block;width:100%;border:3px solid #4A3A55;margin-top:12px;
     -webkit-touch-callout:default;-webkit-user-select:auto;user-select:auto;pointer-events:auto;}
@@ -159,6 +173,34 @@
   </div>
 </div>
 
+<!-- RSVP form -->
+<div class="overlay" id="rsvp">
+  <div class="panel">
+    <div class="banner">&#9993; RSVP</div>
+    <p class="foot" style="font-size:18px;color:#F5E9DA;margin:14px 0 4px">Save your seats at the feast.</p>
+    <div id="rsvp-form">
+      <label class="flabel">YOUR NAME</label>
+      <input id="rsvp-name" type="text" maxlength="40" placeholder="e.g. Aiman &amp; family" autocomplete="name">
+      <label class="flabel">HOW MANY PAX?</label>
+      <div class="paxrow" id="paxrow">
+        <button class="pax on" data-pax="1">1</button>
+        <button class="pax" data-pax="2">2</button>
+        <button class="pax" data-pax="3">3</button>
+        <button class="pax" data-pax="4">4</button>
+        <button class="pax" data-pax="5">5</button>
+      </div>
+      <button class="bigbtn" id="rsvp-send">SEND RSVP</button>
+      <div class="foot" id="rsvp-msg">&nbsp;</div>
+      <button class="bigbtn ghost" id="rsvp-back">BACK</button>
+    </div>
+    <div id="rsvp-done" style="display:none">
+      <h1 id="rsvp-thanks" style="font-size:14px"></h1>
+      <p class="foot" style="font-size:18px;color:#F5E9DA" id="rsvp-seats"></p>
+      <button class="bigbtn" id="rsvp-close">DONE</button>
+    </div>
+  </div>
+</div>
+
 <!-- saved-image preview (iOS fallback) -->
 <div class="overlay" id="preview">
   <div class="panel" style="max-width:340px">
@@ -177,7 +219,7 @@
     <canvas id="scene" width="240" height="150"></canvas>
     <h1 id="f-names"></h1>
     <p class="foot" id="f-msg" style="font-size:18px;color:#F5E9DA;margin:0 0 4px;"></p>
-    <a class="bigbtn" id="f-rsvp" href="#">SEND MY RSVP</a>
+    <button class="bigbtn" id="f-rsvp">SEND MY RSVP</button>
     <button class="bigbtn ghost" id="play-again">PLAY AGAIN</button>
     <div class="foot">see you at the ceremony</div>
   </div>
@@ -204,10 +246,16 @@ const INVITE = {
   where   : "Crazy Rich Asians Banquet Hall<br>Ecohill, Semenyih",
   dress   : "Dress up, feel comfortable, and celebrate with us.",
   rsvpBy  : "7 November 2026",
-  rsvpUrl : "mailto:adib.nabihah@example.com?subject=RSVP",
   rsvpText: "SEND MY RSVP",
   finaleMsg: "You outran a dragon for us. The least we can do is feed you cake."
 };
+/* --- RSVP delivery: see rsvp-setup-guide.md (guests never see your email) --- */
+const RSVP = {
+  mode     : 'apps-script',   // 'apps-script' | 'google-form' | 'off'
+  endpoint : 'https://script.google.com/macros/s/AKfycbzylr59hFVKQpftFC_ylruZC7Ig1wnGBu_PVUzsAXRizbqD8ZV0ZTLez9CMU__bfAQ/exec',
+  form     : { id:'', nameEntry:'entry.000000000', paxEntry:'entry.000000000' }
+};
+
 const DRAGON_SPEED = 0.34;    // fraction of your speed — lower is easier
 const LIVES = 3;
 
@@ -319,8 +367,12 @@ cvs.addEventListener('mousedown',e=>{mouseDown=true;startStick(e.clientX,e.clien
 window.addEventListener('mousemove',e=>{if(mouseDown)moveStick(e.clientX,e.clientY);});
 window.addEventListener('mouseup',()=>{mouseDown=false;endStick();});
 const keys={};
-window.addEventListener('keydown',e=>{keys[e.key]=true;audio.unlock();hideTip();});
-window.addEventListener('keyup',e=>{keys[e.key]=false;});
+window.addEventListener('keydown',e=>{
+  if(e.target&&/^(INPUT|TEXTAREA)$/.test(e.target.tagName)) return;
+  keys[e.key]=true;audio.unlock();hideTip();});
+window.addEventListener('keyup',e=>{
+  if(e.target&&/^(INPUT|TEXTAREA)$/.test(e.target.tagName)) return;
+  keys[e.key]=false;});
 function keyVec(){let x=0,y=0;
   if(keys.ArrowLeft||keys.a)x-=1; if(keys.ArrowRight||keys.d)x+=1;
   if(keys.ArrowUp||keys.w)y-=1;  if(keys.ArrowDown||keys.s)y+=1; return {x,y};}
@@ -502,7 +554,7 @@ function openInvite(){
 function showFinale(){
   document.getElementById('f-names').innerHTML=INVITE.shortNames;
   document.getElementById('f-msg').innerHTML=INVITE.finaleMsg;
-  const a=document.getElementById('f-rsvp'); a.href=INVITE.rsvpUrl; a.textContent=INVITE.rsvpText;
+  document.getElementById('f-rsvp').textContent=INVITE.rsvpText;
   document.getElementById('finale').classList.add('open');
   state='finale'; audio.wedding(); confettiBurst(90);
   sceneRunning=true; requestAnimationFrame(sceneFrame);
@@ -883,6 +935,65 @@ function saveCard(btn){
 }
 document.getElementById('save-btn').addEventListener('click',e=>{
   audio.blip(880,.1,'square',.06); saveCard(e.currentTarget);
+});
+
+/* ---------------- RSVP ---------------- */
+let pax=1, sending=false;
+const rsvpEl=document.getElementById('rsvp'), msgEl=document.getElementById('rsvp-msg');
+const nameEl=document.getElementById('rsvp-name'), sendEl=document.getElementById('rsvp-send');
+
+document.querySelectorAll('.pax').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('.pax').forEach(o=>o.classList.remove('on'));
+  b.classList.add('on'); pax=+b.dataset.pax; audio.blip(720,.07,'square',.05);
+}));
+document.getElementById('f-rsvp').addEventListener('click',()=>{
+  document.getElementById('rsvp-form').style.display='';
+  document.getElementById('rsvp-done').style.display='none';
+  msgEl.innerHTML='&nbsp;'; sendEl.textContent='SEND RSVP'; sending=false;
+  rsvpEl.classList.add('open'); state='rsvp';
+});
+document.getElementById('rsvp-back').addEventListener('click',()=>{
+  rsvpEl.classList.remove('open'); state='finale';
+});
+document.getElementById('rsvp-close').addEventListener('click',()=>{
+  rsvpEl.classList.remove('open'); state='finale';
+});
+
+function postRSVP(data){
+  if(RSVP.mode==='google-form' && RSVP.form.id){
+    const fd=new FormData();
+    fd.append(RSVP.form.nameEntry, data.name);
+    fd.append(RSVP.form.paxEntry, String(data.pax));
+    return fetch('https://docs.google.com/forms/d/e/'+RSVP.form.id+'/formResponse',
+      {method:'POST', mode:'no-cors', body:fd});
+  }
+  if(RSVP.mode==='apps-script' && RSVP.endpoint){
+    return fetch(RSVP.endpoint,{method:'POST', mode:'no-cors',
+      headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify(data)});
+  }
+  return Promise.reject(new Error('not-configured'));
+}
+
+sendEl.addEventListener('click',()=>{
+  if(sending) return;
+  const name=(nameEl.value||'').trim();
+  if(name.length<2){ msgEl.textContent='Please enter your name first.'; nameEl.focus(); return; }
+  sending=true; sendEl.textContent='SENDING...'; msgEl.innerHTML='&nbsp;';
+  postRSVP({name, pax, character:CHARS[CHAR].name, sentAt:new Date().toISOString()})
+    .then(()=>{
+      audio.fanfare(); confettiBurst(50);
+      document.getElementById('rsvp-form').style.display='none';
+      document.getElementById('rsvp-done').style.display='';
+      document.getElementById('rsvp-thanks').innerHTML='SEE YOU<br>THERE!';
+      document.getElementById('rsvp-seats').textContent =
+        name+' \u2014 '+pax+(pax>1?' seats':' seat')+' reserved. Terima kasih!';
+    })
+    .catch(err=>{
+      sending=false; sendEl.textContent='SEND RSVP';
+      msgEl.textContent = (err&&err.message==='not-configured')
+        ? 'RSVP is not connected yet \u2014 see setup guide.'
+        : 'Could not send. Check your connection and try again.';
+    });
 });
 
 /* ---------------- finale scene: bride & groom ---------------- */
