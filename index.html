@@ -88,7 +88,8 @@
   .charbtn .prev{width:72px;height:90px;image-rendering:pixelated;
     background:linear-gradient(#9FD3EE,#6FA463 72%);border:2px solid #2B2130;}
   .charbtn .cname{font-size:10px;color:#E3B23C;letter-spacing:1px;margin-top:8px;}
-  #rsvp{touch-action:auto;}
+  #rsvp{touch-action:auto;z-index:56;}
+  #rsvp .panel{touch-action:auto;}
   .flabel{display:block;font-family:'Press Start 2P',monospace;font-size:8px;color:#E3B23C;
     letter-spacing:1px;margin:16px 0 8px;}
   #rsvp-name{width:100%;background:#1E1824;border:3px solid #4A3A55;color:#F5E9DA;
@@ -947,17 +948,20 @@ document.querySelectorAll('.pax').forEach(b=>b.addEventListener('click',()=>{
   b.classList.add('on'); pax=+b.dataset.pax; audio.blip(720,.07,'square',.05);
 }));
 document.getElementById('f-rsvp').addEventListener('click',()=>{
+  document.getElementById('finale').classList.remove('open');   // don't stack overlays
   document.getElementById('rsvp-form').style.display='';
   document.getElementById('rsvp-done').style.display='none';
   msgEl.innerHTML='&nbsp;'; sendEl.textContent='SEND RSVP'; sending=false;
   rsvpEl.classList.add('open'); state='rsvp';
 });
-document.getElementById('rsvp-back').addEventListener('click',()=>{
-  rsvpEl.classList.remove('open'); state='finale';
-});
-document.getElementById('rsvp-close').addEventListener('click',()=>{
-  rsvpEl.classList.remove('open'); state='finale';
-});
+function backToFinale(){
+  rsvpEl.classList.remove('open');
+  document.getElementById('finale').classList.add('open');
+  state='finale';
+  if(!sceneRunning){ sceneRunning=true; requestAnimationFrame(sceneFrame); }
+}
+document.getElementById('rsvp-back').addEventListener('click',backToFinale);
+document.getElementById('rsvp-close').addEventListener('click',backToFinale);
 
 function postRSVP(data){
   if(RSVP.mode==='google-form' && RSVP.form.id){
